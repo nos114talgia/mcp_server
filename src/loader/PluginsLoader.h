@@ -16,7 +16,7 @@ typedef void* LibraryHandle;
 
 namespace vx::mcp {
     struct PluginEntry {
-        std::string name;
+        std::string path;
         LibraryHandle handle;
         PluginAPI* instance;
 
