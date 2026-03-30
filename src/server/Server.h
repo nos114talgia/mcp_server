@@ -79,7 +79,7 @@ namespace vx::mcp {
         int parseErrores_ = 0;
         std::string name_ = "mcp-server";
 
-        std::unique_ptr<ITransport> transport_;
+        std::shared_ptr<ITransport> transport_;
         std::queue<std::string> notification_queue_;
         std::mutex output_mutex_;
         std::condition_variable queue_cv_;
