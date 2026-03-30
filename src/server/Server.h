@@ -76,7 +76,7 @@ namespace vx::mcp {
         std::unordered_map<std::string, std::function<json(const json&)>> functionMap;
         bool isStopping_ = false;
         int verboseLevel_ = 0;
-        int parseErrores_ = 0;
+        int parserErrors_ = 0;
         std::string name_ = "mcp-server";
 
         std::shared_ptr<ITransport> transport_;
