@@ -28,7 +28,7 @@ void stop_handler(sig_atomic_t s){
     exit(0);
 }
 
-void ClientNotificationCallbackImpl(const std::string& pluginName, const char* notification){
+void ClientNotificationCallbackImpl(const char* pluginName, const char* notification){
     std::lock_guard<std::mutex> lock(notificationState.ServerNotificationMutex);
     if(server && server->IsValid()){
         server->SendNotification(pluginName, notification);
@@ -54,13 +54,13 @@ int main(int argc, char** argv){
     auto logs_directory_option = op.add<Value<std::string>>("l", "logs", "directory with logs", "./logs");
     auto verbose_option = op.add<Value<bool>>("v", "verbose", "enable verbose", verbose);
     auto use_see_server = op.add<Switch>("s", "see", "start as see server");
-    name_option->assign_to(name);
-    verbose_option->assign_to(verbose);
-    plugins_directory_option->assign_to(plugins_directory);
-    logs_directory_option->assign_to(logs_directory);
+    name_option->assign_to(&name);
+    verbose_option->assign_to(&verbose);
+    plugins_directory_option->assign_to(&plugins_directory);
+    logs_directory_option->assign_to(&logs_directory);
 
     try{
-        op.parse(argc, argc);
+        op.parse(argc, argv);
         if(help_option->is_set()){
             std::cout << op << std::endl;
             return 0;
@@ -89,7 +89,7 @@ int main(int argc, char** argv){
 
     std::string logFilename = logs_directory + "/mcp-server_" + iso_date + ".log";
     auto sink_file = std::make_shared<AixLog::SinkFile>(AixLog::Severity::trace, logFilename);
-    Aixlog::Log::init({sink_file});
+    AixLog::Log::init({sink_file});
 
     LOG(INFO) << " __  __  _____ _____        _____ ______ _______      ________ _____  " << std::endl;
     LOG(INFO) << "|  \\/  |/ ____|  __ \\      / ____|  ____|  __ \\ \\    / /  ____|  __ \\ " << std::endl;
@@ -110,7 +110,7 @@ int main(int argc, char** argv){
     }
 
     server->Name(name);
-    server->VerboseLevel(verbose_level);
+    server->VerboseLevel(verbose);
 
     server->OverrideCallback("tools/list", [&loader](const json& request){
         nlohmann::ordered_json response = MCPBuilder::Response(request);
@@ -136,7 +136,7 @@ int main(int argc, char** argv){
 
         for(const auto& plugin : loader->GetPlugins()){
             if(plugin.instance->GetType() == PLUGIN_TYPE_TOOLS){
-                for(int i = 0; i < plugin.instance->GetToolsCount(); i++){
+                for(int i = 0; i < plugin.instance->GetToolCount(); i++){
                     auto* PluginTool = plugin.instance->GetTool(i);
                     if(PluginTool->name == request["params"]["name"]){
                         res_ptr = plugin.instance->HandleRequest(request.dump().c_str());

@@ -20,8 +20,8 @@ set(SOURCES
     src/main.cpp
     src/server/Server.cpp
     src/transport/StdioTransport.cpp
-    src/transport/HttpStreamTransport.cpp
-    src/transport/SseTransport.cpp
+    # src/transport/HttpStreamTransport.cpp
+    # src/transport/SseTransport.cpp
     src/loader/PluginsLoader.cpp
 )
 
@@ -31,7 +31,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     src
     src/transport
     src/interface
-    libs_tier01/aixlog-1.5.0/include
+    src/utils
+    libs_tier_01/aixlog-1.5.0/include
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -43,5 +44,5 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     endif()
 endif()
 
-add_subdirectory(plugins/sleep)
-add_subdirectory(plugins/code-review)
+# add_subdirectory(plugins/sleep)
+# add_subdirectory(plugins/code-review)

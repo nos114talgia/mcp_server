@@ -3,7 +3,7 @@
 #include "Server.h"
 #include "aixlog.hpp"
 #include "version.h"
-#include "MCPBuilder.h"
+#include "../utils/MCPBuilder.h"
 
 namespace vx::mcp {
     Server::Server(){
