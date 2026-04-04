@@ -37,6 +37,7 @@ namespace vx::mcp {
 
         void Stop();
         void StopAsync();
+        void RequestStop();
 
         inline bool IsValid() {return transport_ != nullptr;}
         inline void VerboseLevel(int level) {verboseLevel_ = level;}
@@ -74,7 +75,10 @@ namespace vx::mcp {
 
     private:
         std::unordered_map<std::string, std::function<json(const json&)>> functionMap;
-        bool isStopping_ = false;
+
+        std::atomic<bool> isStopping_{false};
+        std::atomic<bool> isCleaned_{false};
+
         int verboseLevel_ = 0;
         int parserErrors_ = 0;
         std::string name_ = "mcp-server";

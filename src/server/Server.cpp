@@ -174,31 +174,36 @@ namespace vx::mcp {
     }
 
     void Server::Stop(){
+        if(isCleaned_.exchange(true)){
+            return;
+        }
+
         LOG(INFO) << "Stopping server" << std::endl;
-        isStopping_ = true;
         if(transport_){
             LOG(INFO) << "Stopping transport" << std::endl;
             transport_->Stop();
             transport_.reset();
             LOG(INFO) << "Transport Stopped" << std::endl;
         }
+
         writer_running_ = false;
         queue_cv_.notify_one();
         if(writer_thread_.joinable()){
             writer_thread_.join();
             LOG(INFO) << "Writer thread stopped" << std::endl;
         }
-        reader_running_ = false;
-        if (reader_thread_.joinable()) {
-            reader_thread_.join();
-            LOG(INFO) << "Reader thread joined." << std::endl;
-        }
 
         LOG(INFO) << "Server stopped." << std::endl;
     }
 
+    void Server::RequestStop(){
+        isStopping_.store(true);
+    }
+
     void Server::StopAsync(){
-        if (isStopping_) return;
+        if(isStopping_.exchange(true)){
+            return;
+        }
 
         isStopping_ = true;
         LOG(INFO) << "Stopping async server..." << std::endl;
