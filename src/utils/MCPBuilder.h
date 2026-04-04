@@ -19,10 +19,10 @@ public:
         InternalError = -32603
     };
 
-    static json Response(json requeset){
+    static json Response(const json& request){
         json response;
         response["jsonrpc"] = "2.0";
-        response["id"] = requeset["id"];
+        response["id"] = request["id"];
         response["result"] = json::object();
         return response;
     }
@@ -94,7 +94,28 @@ public:
             }}
         });
     }
-};
 
+    // Notification for capability list changes defined by the MCP specification. Sent to the client after a plugin hot-reload to trigger a re-fetch.
+    static json NotificationToolsListChanged(){
+        return json::object({
+            {"jsonrpc", "2.0"},
+            {"method", "notifications/tools/list_changed"}
+        });
+    }
+
+    static json NotificationPromptsListChanged() {
+        return json::object({
+            {"jsonrpc", "2.0"},
+            {"method", "notifications/prompts/list_changed"}
+        });
+    }
+
+    static json NotificationResourcesListChanged() {
+        return json::object({
+            {"jsonrpc", "2.0"},
+            {"method", "notifications/resources/list_changed"}
+        });
+    }
+};
 
 #endif
