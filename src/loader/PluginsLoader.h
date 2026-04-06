@@ -73,6 +73,9 @@ namespace vx::mcp {
 
         void SetOnPluginLoaded(OnPluginLoaded callback);
         void SetOnPluginChanged(OnPluginsChanged callback);
+
+        void StartWatching(const std::string& directory, std::chrono::seconds interval = std::chrono::seconds(5));
+        void StopWatching();
     
     private:
         enum class LoadState {
