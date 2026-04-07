@@ -184,7 +184,7 @@ namespace vx::mcp {
     void PluginsLoader::SetOnPluginLoaded(OnPluginLoaded callback){
         m_onPluginLoaded = std::move(callback);
     }
-    void PluginsLoader::SetOnPluginChanged(OnPluginsChanged callback){
+    void PluginsLoader::SetOnPluginsChanged(OnPluginsChanged callback){
         m_onPluginsChanged = std::move(callback);
     }
 

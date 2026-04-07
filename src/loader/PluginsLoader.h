@@ -72,7 +72,7 @@ namespace vx::mcp {
         std::vector<std::shared_ptr<PluginEntry>> GetPluginsSnapshot() const;
 
         void SetOnPluginLoaded(OnPluginLoaded callback);
-        void SetOnPluginChanged(OnPluginsChanged callback);
+        void SetOnPluginsChanged(OnPluginsChanged callback);
 
         void StartWatching(const std::string& directory, std::chrono::seconds interval = std::chrono::seconds(5));
         void StopWatching();
