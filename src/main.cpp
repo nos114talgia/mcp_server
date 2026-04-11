@@ -5,7 +5,7 @@
 #include "json.hpp"
 #include "StdioTransport.h"
 // #include "SseTransport.h"
-// #include "HttpStreamTransport.hpp"
+#include "HttpStreamTransport.hpp"
 #include "server/Server.h"
 #include "loader/PluginsLoader.h"
 #include "utils/MCPBuilder.h"
