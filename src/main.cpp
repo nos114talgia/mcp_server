@@ -85,7 +85,11 @@ int main(int argc, char** argv){
         transport = std::make_shared<vx::transport::Stdio>()
     }
 */
-    transport = std::make_shared<vx::transport::Stdio>();
+    if(use_httpstream_server->is_set()){
+        transport = std::make_shared<vx::transport::HttpStream>();
+    } else {
+        transport = std::make_shared<vx::transport::Stdio>();
+    }
 
     auto now = std::chrono::system_clock::now();
     auto time_t_now = std::chrono::system_clock::to_time_t(now);

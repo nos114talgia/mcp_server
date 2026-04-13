@@ -82,7 +82,7 @@ namespace vx::mcp {
 
         if(!transport_->Start()){
             LOG(ERROR) << "Failed to start transport" << std::endl;
-            Stop();
+            return false;
         }
 
         while(!isStopping_){
@@ -127,6 +127,7 @@ namespace vx::mcp {
 
         transport_ = transport;
         isStopping_ = false;
+        isCleaned_ = false;
 
         writer_running_ = true;
         writer_thread_ = std::thread(&Server::WriterLoop, this);
@@ -177,7 +178,7 @@ namespace vx::mcp {
         if(isCleaned_.exchange(true)){
             return;
         }
-
+        isStopping_ = true;
         LOG(INFO) << "Stopping server" << std::endl;
         if(transport_){
             LOG(INFO) << "Stopping transport" << std::endl;

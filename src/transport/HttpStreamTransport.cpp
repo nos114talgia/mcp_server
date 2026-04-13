@@ -35,6 +35,9 @@ namespace vx::transport {
         client_connected_.store(false);
         sse_stream_active_.store(false);
 
+        incoming_cv_.notify_all();
+        sse_cv_.notify_all();
+
         if(server_){
             server_->stop();
         }
@@ -42,9 +45,6 @@ namespace vx::transport {
         if(server_thread_.joinable()){
             server_thread_.join();
         }
-
-        incoming_cv_.notify_all();
-        sse_cv_.notify_all();
 
         {
             std::lock_guard<std::mutex> lock(pending_mutex_);
@@ -147,7 +147,189 @@ namespace vx::transport {
             HandleDeleteSession(req, res);
         });
     }
+    void HttpStream::HandlePostMessage(const httplib::Request& req, httplib::Response& res) {
+        SetCORSHeaders(res);
 
+        auto content_type = req.get_header_value("Content-Type");
+        if(content_type.find("application/json") == std::string::npos) {
+            res.status = 415;
+            res.set_content("{\"error\":\"Invalid Content-Type. Expected application/json\"}", "application/json");
+            return;
+        }
+
+        auto accept = req.get_header_value("Accept");
+        if(!accept.empty() && accept.find("application/json") == std::string::npos) {
+            res.status = 406;
+            res.set_content("{\"error\":\"Not Acceptable. Expected application/json\"}", "application/json");
+            return;
+        }
+
+        std::string message = req.body;
+        if(message.empty()){
+            res.status = 400;
+            res.set_content("{\"error\":\"Empty message body\"}", "application/json");
+            return;
+        }
+
+        nlohmann::json parsed;
+        try{
+            parsed = nlohmann::json::parse(message);
+        } catch (const nlohmann::json::parse_error& e) {
+            res.status = 400;
+            res.set_content("{\"error\":\"Invalid JSON\"}", "application/json");
+            return;
+        }
+
+        bool is_initialize = parsed.contains("method") && parsed["method"] == "initialize";
+        if(is_initialize){ 
+            session_id_ = vx::utils::SessionBuilder::GenerateUniqueSessionID();
+            session_initialized_ = true;
+            client_connected_.store(true);
+            LOG(INFO) << "Initializing session: " << session_id_ << std::endl;
+        } else if(session_initialized_){
+            if(!ValidateSession(req, res)){
+                return;
+            }
+        }
+
+        bool is_notification = !parsed.contains("id");
+        if(is_notification){
+            LOG(DEBUG) << "Received notification via POST: " << message << std::endl;
+            {
+                std::lock_guard<std::mutex> lock(incoming_mutex_);
+                incoming_messages_.push(message);
+            }
+            incoming_cv_.notify_one();
+
+            res.status = 202;
+            if(session_initialized_){
+                res.set_header("Mcp-Session-Id", session_id_);
+            }
+            return;
+        }
+
+        std::string id_str;
+        if(parsed["id"].is_number()) {
+            id_str = std::to_string(parsed["id"].get<int>());
+        } else {
+            id_str = parsed["id"].get<std::string>();
+        }
+
+        LOG(DEBUG) << "Received request via POST (id=" << id_str << "): " << message << std::endl;
+
+        auto pending = std::make_shared<PendingRequest>();
+        std::future<std::string> response_future = pending->promise.get_future();
+        {
+            std::lock_guard<std::mutex> lock(pending_mutex_);
+            pending_requests_.emplace(id_str, pending);
+        }
+        {
+            std::lock_guard<std::mutex> lock(incoming_mutex_);
+            incoming_messages_.push(message);
+        }
+        incoming_cv_.notify_one();
+
+        auto status = response_future.wait_for(std::chrono::seconds(30));
+        if(status == std::future_status::timeout){
+            LOG(ERROR) << "Request timed out (id=" << id_str << ")" << std::endl;
+            {
+                std::lock_guard<std::mutex> lock(pending_mutex_);
+                pending_requests_.erase(id_str);
+            }
+            res.status = 504;
+            res.set_content("{\"error\":\"Request timed out\"}", "application/json");
+            return;
+        }
+
+        std::string response_data = response_future.get();
+        if(response_data.empty()){
+            res.status = 500;
+            res.set_content("{\"error\":\"Internal Server Error\"}", "application/json");
+            return;
+        }
+
+        res.status = 200;
+        res.set_content(response_data, "application/json");
+        if(session_initialized_){
+            res.set_header("Mcp-Session-Id", session_id_);
+        }
+        return;
+    }
+
+    void HttpStream::HandleGetSSE(const httplib::Request& req, httplib::Response& res) { 
+        SetCORSHeaders(res);
+
+        if(session_initialized_ && !ValidateSession(req, res)){
+            return;
+        }
+
+        LOG(DEBUG) << "SSE stream client connected" << std::endl;
+        res.set_header("Content-Type", "text/event-stream");
+        res.set_header("Cache-Control", "no-cache");
+        res.set_header("Connection", "keep-alive");
+        if(session_initialized_){
+            res.set_header("Mcp-Session-Id", session_id_);
+        }
+
+        sse_stream_active_.store(true);
+
+        res.set_content_provider("text/event-stream",
+            [this](size_t offset, httplib::DataSink& sink) -> bool {
+                using clock = std::chrono::steady_clock;
+                static thread_local auto last_ping = clock::now();
+                const auto ping_interval = std::chrono::seconds(5);
+
+                auto terminate = [this]() ->bool {
+                    sse_stream_active_.store(false);
+                    sse_cv_.notify_all();
+                    return false;
+                };
+
+                try{
+                    if(clock::now() - last_ping > ping_interval){
+                        const char* ping = ": ping\n\n";
+                        if(!sink.write(ping, std::strlen(ping))){
+                            LOG(ERROR) << "SSE keep-alive write failed" << std::endl;
+                            return terminate();
+                        }
+                        last_ping = clock::now();
+                    }
+
+                    std::unique_lock<std::mutex> lock(sse_mutex_);
+                    sse_cv_.wait_for(lock, std::chrono::milliseconds(200), [this]() {
+                        return !sse_notifications_.empty() || !sse_stream_active_.load();
+                    });
+
+                    if(!sse_stream_active_.load()){
+                        return terminate();
+                    }
+
+                    if(!sse_notifications_.empty()){
+                        std::string message = std::move(sse_notifications_.front());
+                        sse_notifications_.pop();
+                        lock.unlock();
+
+                        std::string sse_msg = "event: message\ndata: " + message + "\n\n";
+                        LOG(DEBUG) << "SSE stream message: " << sse_msg << std::endl;
+
+                        if(!sink.write(sse_msg.c_str(), sse_msg.length())){
+                            LOG(ERROR) << "SSE stream write failed" << std::endl;
+                            return terminate();
+                        }
+                    }
+                    return true;
+
+                } catch (const std::exception& e) {
+                    LOG(ERROR) << "SSE stream error: " << e.what() << std::endl;
+                    return terminate();
+                } catch (...) {
+                    LOG(ERROR) << "Unknown error" << std::endl;
+                    return terminate();
+                }
+
+            }
+        );
+    }
 
 
     void HttpStream::HandleDeleteSession(const httplib::Request& req, httplib::Response& res) {
