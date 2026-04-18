@@ -90,8 +90,8 @@ namespace vx::mcp {
             return nullptr;
         }
 
-        entry->createFunc = (PluginAPI* (*)())dlsym(entry->handle, "CreatePluginAPI");
-        entry->destroyFunc = (void (*)(PluginAPI*))dlsym(entry->handle, "DestroyPluginAPI");
+        entry->createFunc = (PluginAPI* (*)())dlsym(entry->handle, "CreatePlugin");
+        entry->destroyFunc = (void (*)(PluginAPI*))dlsym(entry->handle, "DestroyPlugin");
 
         if(!entry->createFunc || !entry->destroyFunc){
             LOG(ERROR) << "Plugin does not export CreatePluginAPI or DestroyPluginAPI: " << path << std::endl;
