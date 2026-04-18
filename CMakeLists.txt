@@ -46,3 +46,4 @@ endif()
 
 # add_subdirectory(plugins/sleep)
 # add_subdirectory(plugins/code-review)
+add_subdirectory(plugins/weather)
