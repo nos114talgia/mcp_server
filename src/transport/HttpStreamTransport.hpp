@@ -17,7 +17,7 @@
 namespace vx::transport {
     class HttpStream : public ITransport {
     public:
-        explicit HttpStream(int port = 8080, std::string host = "127.0.0.1");
+        explicit HttpStream(int port = 8080, std::string host = "0.0.0.0");
         ~HttpStream();
         HttpStream(const HttpStream&) = delete;
         HttpStream(HttpStream&&) = delete;
