@@ -16,6 +16,18 @@ configure_file(
 
 find_package(Threads REQUIRED)
 
+# ASAN
+option(USE_ASAN "Enable AddressSanitizer for memory debugging" OFF)
+
+if(USE_ASAN)
+    message(STATUS "Build with AddressSanitizer: ENABLED")
+    
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
+    
+    add_link_options(-fsanitize=address)
+endif()
+
+
 set(SOURCES
     src/main.cpp
     src/server/Server.cpp
