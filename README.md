@@ -69,6 +69,9 @@ mcp_server/
 │       └── TSingleton.h            线程安全单例模板
 │
 ├── plugins/                        示例插件（各自编译为独立 .so/.dll）
+|   ├── code-review/                代码审核prompt
+|   ├── notification/               服务器通知/长任务进度通知测试工具
+|   ├── sleep/                      模拟延迟工具
 │   └── weather/                    天气查询工具（调用 open-meteo.com API）
 │
 ├── include/                        第三方头文件
