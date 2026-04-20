@@ -16,7 +16,7 @@ configure_file(
 
 find_package(Threads REQUIRED)
 
-# ASAN
+# for ASAN
 option(USE_ASAN "Enable AddressSanitizer for memory debugging" OFF)
 
 if(USE_ASAN)
