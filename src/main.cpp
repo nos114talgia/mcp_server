@@ -4,7 +4,7 @@
 #include "aixlog.hpp"
 #include "json.hpp"
 #include "StdioTransport.h"
-// #include "SseTransport.h"
+#include "SseTransport.h"
 #include "HttpStreamTransport.hpp"
 #include "server/Server.h"
 #include "loader/PluginsLoader.h"
@@ -78,16 +78,10 @@ int main(int argc, char** argv){
         std::cerr << "Exception: " << e.what() << std::endl;
         return -1;
     }
-/*
+
     if(use_see_server->is_set()){
         transport = std::make_shared<vx::transport::SSE>();
     } else if(use_httpstream_server->is_set()){
-        transport = std::make_shared<vx::transport::HttpStream>();
-    } else {
-        transport = std::make_shared<vx::transport::Stdio>()
-    }
-*/
-    if(use_httpstream_server->is_set()){
         transport = std::make_shared<vx::transport::HttpStream>();
     } else {
         transport = std::make_shared<vx::transport::Stdio>();

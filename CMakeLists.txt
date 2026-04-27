@@ -33,7 +33,7 @@ set(SOURCES
     src/server/Server.cpp
     src/transport/StdioTransport.cpp
     src/transport/HttpStreamTransport.cpp
-    # src/transport/SseTransport.cpp
+    src/transport/SseTransport.cpp
     src/loader/PluginsLoader.cpp
 )
 
