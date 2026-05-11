@@ -34,6 +34,7 @@ set(SOURCES
     src/transport/StdioTransport.cpp
     src/transport/HttpStreamTransport.cpp
     src/transport/SseTransport.cpp
+    src/transport/StreamableTransport.cpp
     src/loader/PluginsLoader.cpp
 )
 

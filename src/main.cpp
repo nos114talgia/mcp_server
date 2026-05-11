@@ -6,6 +6,7 @@
 #include "StdioTransport.h"
 #include "SseTransport.h"
 #include "HttpStreamTransport.hpp"
+#include "StreamableTransport.h"
 #include "server/Server.h"
 #include "loader/PluginsLoader.h"
 #include "utils/MCPBuilder.h"
@@ -60,6 +61,7 @@ int main(int argc, char** argv){
     auto verbose_option = op.add<Value<bool>>("v", "verbose", "enable verbose", verbose);
     auto use_see_server = op.add<Switch>("s", "see", "start as see server");
     auto use_httpstream_server = op.add<Switch>("t", "httpstream", "start as httpstream server");
+    auto use_streamable_server = op.add<Switch>("m", "streamable", "start as streamable HTTP server (MCP 2025-03-26)");
     name_option->assign_to(&name);
     verbose_option->assign_to(&verbose);
     plugins_directory_option->assign_to(&plugins_directory);
@@ -83,6 +85,8 @@ int main(int argc, char** argv){
         transport = std::make_shared<vx::transport::SSE>();
     } else if(use_httpstream_server->is_set()){
         transport = std::make_shared<vx::transport::HttpStream>();
+    } else if(use_streamable_server->is_set()){
+        transport = std::make_shared<vx::transport::StreamableTransport>();
     } else {
         transport = std::make_shared<vx::transport::Stdio>();
     }

@@ -335,7 +335,7 @@ namespace vx::mcp {
         nlohmann::ordered_json response = {};
         response["jsonrpc"] = "2.0";
         if (request.contains("id")) response["id"] = request["id"];
-        std::string pVer = "2024-11-05";
+        std::string pVer = "2025-03-26";
         if (request.contains("params") && request["params"].contains("protocolVersion")) {
             pVer = request["params"]["protocolVersion"].get<std::string>();
         }
